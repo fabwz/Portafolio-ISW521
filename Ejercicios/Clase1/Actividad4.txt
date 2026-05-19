@@ -1,0 +1,40 @@
+Actividad #4
+
+Pregunta #1:
+
+URL 1
+Subdominio: campus
+SLD: utn
+TLD: .ac.cr
+Tipo de TLD: ccTLD (Costa Rica)
+
+URL 2
+Subdominio: www
+SLD: netflix
+TLD: .com
+Tipo de TLD: gTLD
+
+URL 3
+Subdominio: api
+SLD: github
+TLD: .io
+Tipo de TLD: ccTLD (Territorio Britanico)
+
+URL 4
+Subdominio: app
+SLD: maravilla
+TLD: .co.cr
+Tipo de TLD: ccTLD (Costa Rica)
+
+Pregunta #2:
+.cr es administrado por NIC Costa Rica (Universidad de Costa Rica) que funciona como registro nacional bajo ICANN.
+
+.com es administrado por Verisign bajo  ICANN.
+
+No se necesita ICANN para registrar un subdominio, estos los crea el propiertario del dominio de su proveedor DNS.
+
+Pregunta #3:
+No, debido a que utn.ac.cr ya es un dominio pagado y registrado, por lo que agregar "egresados" es agregar un registro DNS nuevo en el servidor que administra la UTN.
+
+Pregunta #4:
+El registro A Mapea un nombre de dominio directamente a una direccion IP mientras que el registro CNAME, mapea un nombre de dominio a otro nombre de dominio, como si fuera un apodo que apunta a otro nombre.

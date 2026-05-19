@@ -1,0 +1,20 @@
+Actividad #3
+Parte A: Identificar componentes de un URL
+
+Protocolo: https
+Subdominio: api
+Dominio: github.com
+Puerto: 433
+Ruta: /repos/bryancs/isw521/issues
+Parameto 1: state=open
+Parameto 2: labels=semana1
+Comentarios: #comentarios
+
+
+Parte B: Diseñar Clean URLs
+
+https://utn.ac.cr/cursos/isw-521/2026-II/san-carlos
+
+https://utn.ac.cr/estudiantes/2022-0001
+
+https://utn.ac.cr/cursos/isw-521/semana-3/materiales

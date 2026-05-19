@@ -1,0 +1,17 @@
+Actividad #2
+
+Pregunta #1
+A - Internet, ya que es una red dirigida al publico general y debe de ser accesible desde cualquier dispositivo sin ninguna restriccion.
+B - Intranet, ya que hace referencia a una red privada solo para ciertos empleados protegiendo datos sensibles y personales respaldado por un sistema de seguridad robusto.
+C - Extranet debido a que es para usuarios externos especificos autorizados no para el publico general, respaldado por sistemas de autenticacion.
+
+Pregunta #2
+El sistema B: Intranet es el que requiere la mayor inversion ya que todos los datos personales y financieros de los usuarios deben ser cifrados por un sistema de seguridad robusto y un error implicarian problemas legales y daños a la institucion.
+
+Pregunta #3
+Si es posible mediante:
+Maquinas virtuales o dockers independientes, una por cada sistema.
+Aplicar VLANs y firewalls como sistema de seguridad, ademas de aislar el trafico de cada sistema en la red.
+Usar un DMZ para exponer en la red unicamente los servicios y sistemas publicos (Sistemas A y C), sin que la gente tenga acceso a la red interna (Sistema B).
+
+
