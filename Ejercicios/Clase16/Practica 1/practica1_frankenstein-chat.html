@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Asistente Frankenstein</title>
+<!--
+  ============================================================
+  PRÁCTICA 1 — EL ASISTENTE FRANKENSTEIN
+  ============================================================
+  Este código fue "generado por una IA con un prompt muy malo".
+  Su trabajo: diagnosticarlo con DevTools y repararlo.
+  Requiere conexión a internet (usa una API pública de prueba).
+
+  REGLA: prohibido modificar a ciegas. Cada cambio debe estar
+  respaldado por evidencia de las DevTools (bitácora).
+  ============================================================
+-->
+<style>
+  * { box-sizing: border-box; margin: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+  body { background: #f3f4f6; display: flex; justify-content: center; padding: 30px; }
+  .app { width: 640px; background: #fff; border: 1px solid #e5e7eb; border-radius: 14px;
+         display: flex; flex-direction: column; height: 82vh; overflow: hidden; }
+  header { padding: 16px 22px; border-bottom: 1px solid #e5e7eb; }
+  header h1 { font-size: 20px; color: #1f2937; }
+  header p  { font-size: 12px; color: #6b7280; margin-top: 4px; }
+  #chat { flex: 1; overflow-y: auto; padding: 18px 22px; display: flex; flex-direction: column; gap: 12px; }
+  .msg { max-width: 78%; padding: 10px 14px; border-radius: 14px; font-size: 14px; line-height: 1.45; }
+  .msg.user { align-self: flex-end; background: #dbeafe; }
+  .msg.ia   { align-self: flex-start; background: #e5e7eb; }
+  #estado { padding: 4px 22px; font-size: 12px; color: #16a34a; min-height: 22px; }
+  footer { display: flex; gap: 10px; padding: 14px 22px; border-top: 1px solid #e5e7eb; }
+  #entrada { flex: 1; padding: 11px 14px; border: 1px solid #b4b4be; border-radius: 12px; font-size: 14px; }
+  #btnEnviar { padding: 11px 22px; border: 0; border-radius: 12px; background: #2563eb;
+               color: #fff; font-weight: 700; cursor: pointer; font-size: 14px; }
+  #btnEnviar:active { transform: scale(.97); }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>🤖 Asistente Frankenstein</h1>
+    <p>Chat con memoria a largo plazo (localStorage) + API simulada de respuestas</p>
+  </header>
+  <div id="chat"></div>
+  <div id="estado"></div>
+  <footer>
+    <input id="entrada" type="text" placeholder="Escribe tu mensaje..." autocomplete="off">
+    <button id="btnEnviar">Enviar</button>
+  </footer>
+</div>
+
+<script>
+/* ============================================================
+   Arquitectura hexagonal (puertos y adaptadores):
+   Dominio -> no conoce DOM, localStorage ni fetch.
+   Puertos -> interfaces que el dominio necesita.
+   Adaptadores -> implementaciones concretas (DOM, localStorage, fetch).
+   ============================================================ */
+
+/* ---------- DOMINIO ---------- */
+
+class Mensaje {
+  constructor(rol, texto) {
+    this.rol = rol;
+    this.texto = texto;
+  }
+}
+
+class Conversacion {
+  constructor(mensajes = []) {
+    this.mensajes = mensajes;
+  }
+
+  agregar(rol, texto) {
+    const mensaje = new Mensaje(rol, texto);
+    this.mensajes.push(mensaje);
+    return mensaje;
+  }
+
+  get longitud() {
+    return this.mensajes.length;
+  }
+}
+
+/* Caso de uso: orquesta el dominio a través de los puertos,
+   sin saber nada de DOM/localStorage/fetch. */
+class ServicioChat {
+  constructor(conversacion, repositorioMemoria, proveedorRespuestas) {
+    this.conversacion = conversacion;
+    this.repositorioMemoria = repositorioMemoria;
+    this.proveedorRespuestas = proveedorRespuestas;
+  }
+
+  cargarHistorial() {
+    const mensajes = this.repositorioMemoria.cargar();
+    this.conversacion = new Conversacion(mensajes);
+    return this.conversacion.mensajes;
+  }
+
+  async enviarMensaje(texto) {
+    const mensajeUsuario = this.conversacion.agregar("user", texto);
+    this.repositorioMemoria.guardar(this.conversacion.mensajes);
+
+    const respuesta = await this.proveedorRespuestas.preguntar(this.conversacion.longitud);
+    const mensajeIa = this.conversacion.agregar("ia", respuesta);
+    this.repositorioMemoria.guardar(this.conversacion.mensajes);
+
+    return { mensajeUsuario, mensajeIa };
+  }
+}
+
+/* ---------- PUERTOS (contratos que el dominio necesita) ---------- */
+
+class RepositorioMemoria {
+  cargar() { throw new Error("no implementado"); }
+  guardar(_mensajes) { throw new Error("no implementado"); }
+}
+
+class ProveedorRespuestas {
+  async preguntar(_indice) { throw new Error("no implementado"); }
+}
+
+/* ---------- ADAPTADORES (implementaciones concretas) ---------- */
+
+class MemoriaLocalStorage extends RepositorioMemoria {
+  constructor(clave) {
+    super();
+    this.clave = clave;
+  }
+
+  cargar() {
+    const guardado = localStorage.getItem(this.clave);
+    if (guardado === null) return [];
+    try {
+      return JSON.parse(guardado);
+    } catch (e) {
+      console.warn("Memoria corrupta en localStorage, se descarta:", e);
+      return [];
+    }
+  }
+
+  guardar(mensajes) {
+    localStorage.setItem(this.clave, JSON.stringify(mensajes));
+  }
+}
+
+class ProveedorJsonPlaceholder extends ProveedorRespuestas {
+  constructor(endpoint) {
+    super();
+    this.endpoint = endpoint;
+  }
+
+  async preguntar(indice) {
+    const r = await fetch(this.endpoint + "/" + indice);
+    if (!r.ok) {
+      throw new Error("La API respondió con estado " + r.status);
+    }
+    const datos = await r.json();
+    return "🤖 " + datos.title;
+  }
+}
+
+/* ---------- ADAPTADOR DE ENTRADA: UI ---------- */
+
+class VistaChat {
+  constructor({ chatEl, entradaEl, estadoEl, botonEl }) {
+    this.chatEl = chatEl;
+    this.entradaEl = entradaEl;
+    this.estadoEl = estadoEl;
+    this.botonEl = botonEl;
+  }
+
+  pintarMensaje(mensaje) {
+    const div = document.createElement("div");
+    div.className = "msg " + mensaje.rol;
+    div.textContent = mensaje.texto;
+    this.chatEl.appendChild(div);
+    this.chatEl.scrollTop = this.chatEl.scrollHeight;
+  }
+
+  pintarHistorial(mensajes) {
+    mensajes.forEach(m => this.pintarMensaje(m));
+  }
+
+  mostrarEstado(texto) {
+    this.estadoEl.textContent = texto;
+  }
+
+  leerEntrada() {
+    return this.entradaEl.value.trim();
+  }
+
+  limpiarEntrada() {
+    this.entradaEl.value = "";
+  }
+
+  alEnviar(callback) {
+    this.botonEl.addEventListener("click", callback);
+    this.entradaEl.addEventListener("keydown", e => {
+      if (e.key === "Enter") callback();
+    });
+  }
+}
+
+/* ---------- COMPOSICIÓN (raíz de la aplicación) ---------- */
+
+const CLAVE_MEMORIA = "memoria_llm";
+const ENDPOINT = "https://jsonplaceholder.typicode.com/posts";
+
+const vista = new VistaChat({
+  chatEl: document.getElementById("chat"),
+  entradaEl: document.getElementById("entrada"),
+  estadoEl: document.getElementById("estado"),
+  botonEl: document.getElementById("btnEnviar"),
+});
+
+const servicioChat = new ServicioChat(
+  new Conversacion(),
+  new MemoriaLocalStorage(CLAVE_MEMORIA),
+  new ProveedorJsonPlaceholder(ENDPOINT)
+);
+
+async function manejarEnvio() {
+  const texto = vista.leerEntrada();
+  if (!texto) return;
+
+  vista.limpiarEntrada();
+  vista.mostrarEstado("Pensando...");
+
+  try {
+    const { mensajeUsuario, mensajeIa } = await servicioChat.enviarMensaje(texto);
+    vista.pintarMensaje(mensajeUsuario);
+    vista.pintarMensaje(mensajeIa);
+    vista.mostrarEstado("✓ Respuesta recibida");
+  } catch (e) {
+    vista.pintarMensaje(new Mensaje("user", texto));
+    vista.mostrarEstado("⚠ Error al consultar el modelo: " + e.message);
+  }
+}
+
+vista.alEnviar(manejarEnvio);
+
+const historialPrevio = servicioChat.cargarHistorial();
+vista.pintarHistorial(historialPrevio);
+vista.mostrarEstado(
+  historialPrevio.length
+    ? "Memoria restaurada: " + historialPrevio.length + " mensajes"
+    : ""
+);
+</script>
+</body>
+</html>
